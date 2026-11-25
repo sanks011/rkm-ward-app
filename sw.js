@@ -1,8 +1,20 @@
-const CACHE_NAME = "rkm-app-v6";
+const CACHE_NAME = "rkm-app-v7";
 const FILES_TO_CACHE = [
-  "./index.html", "./patient-list.html", "./patient.html", "./enhancement.html",
-  "./ward.html", "./nicu.html", "./ward-list.html", "./diagnostic.html", "./manifest.json",
-  "./icon-192.png", "./icon-512.png", "./icon-180.png", "./icon-512-maskable.png"
+  "./index.html",
+  "./patient-list.html",
+  "./patient.html",
+  "./clinical-note.html",
+  "./ward.html",
+  "./ward-list.html",
+  "./diagnostic.html",
+  "./enhancement.html",
+  "./manifest.json",
+  "./public/assets/css/modern-theme.css",
+  "./public/assets/js/icons.js",
+  "./public/assets/icons/icon-180.png",
+  "./public/assets/icons/icon-192.png",
+  "./public/assets/icons/icon-512.png",
+  "./public/assets/icons/icon-512-maskable.png"
 ];
 
 self.addEventListener("install", (event) => {
@@ -23,7 +35,6 @@ self.addEventListener("activate", (event) => {
 });
 
 // Network-first for app files (so updates show immediately), cache fallback when offline.
-// Supabase / CDN requests are left alone.
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
   const url = new URL(event.request.url);
@@ -34,7 +45,10 @@ self.addEventListener("fetch", (event) => {
   event.respondWith(
     fetch(event.request)
       .then((res) => {
-        if (res && res.ok) { const copy = res.clone(); caches.open(CACHE_NAME).then((c) => c.put(event.request, copy)); }
+        if (res && res.ok) {
+          const copy = res.clone();
+          caches.open(CACHE_NAME).then((c) => c.put(event.request, copy));
+        }
         return res;
       })
       .catch(() => caches.match(event.request).then((c) => c || caches.match("./index.html")))

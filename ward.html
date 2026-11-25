@@ -2,94 +2,274 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Ward Module - RKMSP</title>
+  <title>Ward Module &bull; RKMSP Clinical Suite</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#4DB6AC">
-  <link rel="apple-touch-icon" href="icon-180.png">
+  <meta name="theme-color" content="#00897B">
+  <link rel="apple-touch-icon" href="public/assets/icons/icon-180.png">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="stylesheet" href="public/assets/css/modern-theme.css">
+  <script src="public/assets/js/icons.js"></script>
   <style>
-    :root { --teal:#4DB6AC; --teal-d:#26A69A; --sky:#42A5F5; --bg:#F0FAF9; --text:#263238; --muted:#607D8B; --border:#DCEFED; }
-    * { box-sizing:border-box; }
-    body { font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif; margin:0; background:var(--bg); color:var(--text); }
-    .header { background:var(--teal); color:#fff; padding:12px 5vw; display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; }
-    .header a { color:#fff; text-decoration:none; font-size:14px; }
-    .header h1 { margin:2px 0 0; font-size:clamp(17px,4vw,21px); }
-    .container { max-width:900px; margin:0 auto; padding:4vw; }
-    input { width:100%; padding:12px; border:1px solid #D3E7E5; border-radius:8px; font-size:16px; background:#fff; margin-bottom:14px; }
-    input:focus { outline:0; border-color:var(--teal-d); box-shadow:0 0 0 3px rgba(38,166,154,.15); }
-    button { background:var(--sky); color:#fff; border:0; padding:11px 18px; border-radius:8px; font-size:15px; cursor:pointer; min-height:44px; }
-    .btn-alt { background:#fff; color:var(--teal-d); border:1.5px solid #B9E4E0; }
-    .wards { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; }
-    @media (min-width:640px) { .wards { grid-template-columns:repeat(4,1fr); } }
-    .ward { background:#fff; border:1px solid var(--border); border-top:4px solid var(--teal); border-radius:12px; padding:18px 10px; text-align:center; font-weight:700; font-size:16px; color:var(--text); cursor:pointer; min-height:70px; }
-    .ward small { display:block; font-weight:400; color:var(--muted); margin-top:4px; font-size:12.5px; }
-    .pt { display:flex; gap:12px; align-items:center; background:#fff; border:1px solid var(--border); border-radius:10px; padding:12px 14px; margin-bottom:10px; cursor:pointer; }
-    .pt b { flex:1; } .pt span { color:var(--muted); font-size:13px; }
-    .note { font-size:13px; color:var(--muted); margin:6px 0 14px; }
-    h2 { margin:0 0 10px; font-size:19px; }
+    .wards-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+      margin-top: 16px;
+    }
+    @media (min-width: 640px) {
+      .wards-grid { grid-template-columns: repeat(3, 1fr); }
+    }
+    @media (min-width: 860px) {
+      .wards-grid { grid-template-columns: repeat(4, 1fr); }
+    }
+    .ward-tile {
+      background: #ffffff;
+      border: 1.5px solid var(--border-subtle);
+      border-top: 4px solid var(--teal-primary);
+      border-radius: var(--radius-md);
+      padding: 18px 14px;
+      text-align: center;
+      cursor: pointer;
+      box-shadow: var(--shadow-sm);
+      transition: all 0.18s ease;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      min-height: 88px;
+    }
+    .ward-tile:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+      border-color: var(--teal-primary);
+    }
+    .ward-name {
+      font-size: 16.5px;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 4px;
+    }
+    .patient-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #ffffff;
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 16px 18px;
+      margin-bottom: 12px;
+      box-shadow: var(--shadow-sm);
+      transition: all 0.15s ease;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .patient-row:hover {
+      box-shadow: var(--shadow-md);
+      border-color: var(--border-focus);
+    }
+    .pt-info h4 {
+      margin: 0 0 4px 0;
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+    .pt-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+    .pt-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
   </style>
 </head>
 <body>
-  <div class="header">
-    <div><a href="index.html">&larr; Dashboard</a><h1>Ward Module</h1></div>
-    <div><a href="ward-list.html"><button class="btn-alt">Ward-wise List (print)</button></a></div>
-  </div>
-  <div class="container">
-    <div id="wardView">
-      <input type="search" id="wardSearch" placeholder="Search ward name..." oninput="renderWards()" autocomplete="off">
-      <div class="note">Choose a ward. All wards currently use the NICU / Pediatric chart format.</div>
-      <div id="wards" class="wards">Loading...</div>
+  <!-- Header -->
+  <header class="app-header">
+    <div style="display:flex; align-items:center; gap:12px;">
+      <a href="index.html" class="btn btn-header" style="gap:6px;">
+        <span id="backHomeIcon"></span> Dashboard
+      </a>
+      <div class="brand-text">
+        <h1>Ward Module &bull; Inpatient Department</h1>
+        <span>Ramakrishna Mission Seva Pratishthan</span>
+      </div>
     </div>
+    <div style="display:flex; gap:10px; align-items:center;">
+      <a href="ward-list.html" class="btn btn-header">Ward Census Print</a>
+      <button class="btn btn-header" onclick="logout()">Logout</button>
+    </div>
+  </header>
+
+  <div class="main-wrap">
+    <!-- All Wards View -->
+    <div id="wardView">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:10px;">
+        <div>
+          <h2 style="margin:0 0 4px; font-size:22px; font-weight:800; color:var(--text-main);">Hospital Wards</h2>
+          <p style="margin:0; font-size:14px; color:var(--text-muted);">Select a ward to view admitted patients and perform doctor rounds.</p>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <input type="search" id="wardSearch" placeholder="Search ward (e.g. NICU 1, ICU, PICU, CCU)..." oninput="renderWards()" autocomplete="off">
+      </div>
+
+      <div id="wards" class="wards-grid">Loading wards...</div>
+    </div>
+
+    <!-- Ward Patients View -->
     <div id="patView" style="display:none;">
-      <button class="btn-alt" onclick="backToWards()" style="margin-bottom:12px;">&larr; All wards</button>
-      <h2 id="wardTitle"></h2>
-      <input type="search" id="ptSearch" placeholder="Search patient name, MRD or bed..." oninput="renderPatients()" autocomplete="off">
+      <button class="btn btn-outline" onclick="backToWards()" style="margin-bottom:16px;">
+        <span id="backWardsIcon"></span> &larr; All Hospital Wards
+      </button>
+
+      <div class="clinical-card" style="margin-bottom:18px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+          <div>
+            <h2 id="wardTitle" style="margin:0 0 4px; font-size:20px; font-weight:700; color:var(--teal-dark);">Ward Patients</h2>
+            <p style="margin:0; font-size:13.5px; color:var(--text-muted);">Admitted patients in this ward. Click "Voice Round Note" to dictate daily clinical assessment.</p>
+          </div>
+          <span class="badge badge-teal" id="wardCountBadge">0 patients</span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <input type="search" id="ptSearch" placeholder="Search patient name, bed number, or MRD..." oninput="renderPatients()" autocomplete="off">
+      </div>
+
       <div id="patients"></div>
     </div>
   </div>
 
   <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      if (window.MedicalIcons) {
+        $('backHomeIcon').innerHTML = MedicalIcons.arrowLeft('', 16);
+        $('backWardsIcon').innerHTML = MedicalIcons.arrowLeft('', 16);
+      }
+    });
+
     const SUPABASE_URL = "https://cqjqewlzxebszpnqhmev.supabase.co";
     const SUPABASE_KEY = "sb_publishable_rTd12RguCfNQYezz4febZA_xuIJW3OM";
     const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     const $ = id => document.getElementById(id);
     const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
     const WARDS = ["NICU 1","NICU 2","PICU","CW-CTVS","A2","A3","B1","B2","B3","C2","C3","C5","PWM","PWS","GE","CW","EXT CW","HDU I","CCU","ICU","HDUII"];
-    let patients = [], current = "";
+    let patients = [], currentWard = "";
+
     const inWard = (p, w) => (p.ward || "").split(",").map(x => x.trim()).includes(w);
 
     async function init() {
       const { data } = await supabaseClient.auth.getSession();
-      if (!data.session) { location.href = "index.html"; return; }
-      const { data: rows, error } = await supabaseClient.from('Patients').select('mrd,name,ward,bed_no').eq('is_discharged', false).order('name', { ascending: true });
-      if (error) { $('wards').innerText = "Error: " + error.message; return; }
+      if (!data.session) {
+        location.href = "index.html";
+        return;
+      }
+
+      const { data: rows, error } = await supabaseClient
+        .from('Patients')
+        .select('mrd,name,ward,bed_no,admission_date,doctor_unit')
+        .eq('is_discharged', false)
+        .order('name', { ascending: true });
+
+      if (error) {
+        $('wards').innerText = "Error loading ward census: " + error.message;
+        return;
+      }
+
       patients = rows || [];
       renderWards();
-      const last = sessionStorage.getItem('rkmWard'); if (last) openWard(last);
+
+      const last = sessionStorage.getItem('rkmWard');
+      if (last) openWard(last);
     }
+
     function allWards() {
-      const extra = new Set(); patients.forEach(p => (p.ward || "").split(",").forEach(x => { x = x.trim(); if (x && !WARDS.includes(x)) extra.add(x); }));
+      const extra = new Set();
+      patients.forEach(p => (p.ward || "").split(",").forEach(x => {
+        x = x.trim();
+        if (x && !WARDS.includes(x)) extra.add(x);
+      }));
       return WARDS.concat([...extra]);
     }
+
     function renderWards() {
       const q = $('wardSearch').value.trim().toLowerCase();
       const list = allWards().filter(w => !q || w.toLowerCase().includes(q));
-      $('wards').innerHTML = list.length ? list.map(w => `<div class="ward" onclick="openWard(this.dataset.w)" data-w="${esc(w)}">${esc(w)}<small>${patients.filter(p => inWard(p, w)).length} patients</small></div>`).join('') : 'No ward found.';
+
+      $('wards').innerHTML = list.length ? list.map(w => {
+        const count = patients.filter(p => inWard(p, w)).length;
+        return `
+          <div class="ward-tile" onclick="openWard('${esc(w)}')">
+            <div class="ward-name">${esc(w)}</div>
+            <span class="badge ${count > 0 ? 'badge-teal' : 'badge-warning'}">
+              ${count} ${count === 1 ? 'patient' : 'patients'}
+            </span>
+          </div>
+        `;
+      }).join('') : '<div style="color:var(--text-muted); padding:16px;">No wards match search.</div>';
     }
+
     function openWard(w) {
-      current = w; sessionStorage.setItem('rkmWard', w);
-      $('wardTitle').innerText = "Ward: " + w; $('ptSearch').value = "";
-      $('wardView').style.display = 'none'; $('patView').style.display = 'block'; renderPatients();
+      currentWard = w;
+      sessionStorage.setItem('rkmWard', w);
+      $('wardTitle').innerText = "Ward: " + w;
+      const count = patients.filter(p => inWard(p, w)).length;
+      $('wardCountBadge').innerText = `${count} ${count === 1 ? 'patient' : 'patients'}`;
+      $('ptSearch').value = "";
+      $('wardView').style.display = 'none';
+      $('patView').style.display = 'block';
+      renderPatients();
     }
-    function backToWards() { sessionStorage.removeItem('rkmWard'); $('patView').style.display = 'none'; $('wardView').style.display = 'block'; }
+
+    function backToWards() {
+      sessionStorage.removeItem('rkmWard');
+      $('patView').style.display = 'none';
+      $('wardView').style.display = 'block';
+    }
+
     function renderPatients() {
       const q = $('ptSearch').value.trim().toLowerCase();
-      const list = patients.filter(p => inWard(p, current) && (!q || [p.name, p.mrd, p.bed_no].join(' ').toLowerCase().includes(q)));
-      $('patients').innerHTML = list.length ? list.map(p => `<div class="pt" onclick="location.href='nicu.html?mrd=' + encodeURIComponent(this.dataset.m)" data-m="${esc(p.mrd)}"><b>${esc(p.name)}</b><span>Bed ${esc(p.bed_no || '-')}</span><span>MRD ${esc(p.mrd)}</span></div>`).join('') : '<div class="note">No admitted patients found in this ward.</div>';
+      const list = patients.filter(p => inWard(p, currentWard) && (!q || [p.name, p.mrd, p.bed_no].join(' ').toLowerCase().includes(q)));
+
+      $('patients').innerHTML = list.length ? list.map(p => `
+        <div class="patient-row">
+          <div class="pt-info">
+            <h4>${esc(p.name)}</h4>
+            <div class="pt-meta">
+              <span class="meta-chip">Bed: <strong>${esc(p.bed_no || '-')}</strong></span>
+              <span class="meta-chip">MRD: <strong>${esc(p.mrd)}</strong></span>
+              ${p.doctor_unit ? `<span class="meta-chip">Unit: <strong>${esc(p.doctor_unit)}</strong></span>` : ''}
+            </div>
+          </div>
+          <div class="pt-actions">
+            <button class="btn btn-ai" style="padding:8px 14px; font-size:13px; min-height:36px;" onclick="location.href='clinical-note.html?mrd=' + encodeURIComponent('${esc(p.mrd)}')">
+              Voice Round Note
+            </button>
+            <button class="btn btn-outline" style="padding:8px 14px; font-size:13px; min-height:36px;" onclick="location.href='patient.html?mrd=' + encodeURIComponent('${esc(p.mrd)}')">
+              Patient Chart
+            </button>
+          </div>
+        </div>
+      `).join('') : '<div class="clinical-card" style="text-align:center; color:var(--text-muted);">No admitted patients found in this ward.</div>';
     }
+
+    async function logout() {
+      await supabaseClient.auth.signOut();
+      location.href = "index.html";
+    }
+
     init();
-    if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js'));
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js'));
+    }
   </script>
 </body>
 </html>

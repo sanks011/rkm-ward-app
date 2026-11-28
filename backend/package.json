@@ -1,0 +1,20 @@
+{
+  "name": "rkmsp-clinical-backend",
+  "version": "2.0.0",
+  "description": "RKMSP Clinical Suite - Secure Express Backend (AI Scribe, Deepgram STT, MongoDB & Supabase)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "migrate": "node scripts/migrate-supabase-to-mongo.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "express-rate-limit": "^7.5.0",
+    "helmet": "^8.0.0",
+    "mongoose": "^8.10.0"
+  },
+  "license": "ISC"
+}

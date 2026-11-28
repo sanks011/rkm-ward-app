@@ -84,7 +84,15 @@ interface LosRef {
   los_display: string | null;
 }
 
-function PatientDetailContent({ userId, email }: { userId: string; email: string }) {
+function PatientDetailContent({
+  userId,
+  email,
+  sessionIsAdmin
+}: {
+  userId: string;
+  email: string;
+  sessionIsAdmin: boolean;
+}) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const mrd = searchParams.get("mrd") || "";
@@ -255,12 +263,16 @@ function PatientDetailContent({ userId, email }: { userId: string; email: string
 
     async function init() {
       setLoading(true);
-      const [{ data: roleRow }, { data: pt, error }] = await Promise.all([
-        supabase.from("staff_roles").select("is_admin").eq("user_id", userId).maybeSingle(),
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-/i.test(userId);
+      const [roleRes, ptRes] = await Promise.all([
+        isUuid
+          ? supabase.from("staff_roles").select("is_admin").eq("user_id", userId).maybeSingle()
+          : Promise.resolve({ data: null }),
         supabase.from("Patients").select("*").eq("mrd", mrd).single()
       ]);
 
-      setIsAdmin(!!roleRow?.is_admin);
+      setIsAdmin(sessionIsAdmin || !!roleRes.data?.is_admin);
+      const { data: pt, error } = ptRes;
       if (error || !pt) {
         setLoading(false);
         return;
@@ -1323,7 +1335,7 @@ function PatientDetailContent({ userId, email }: { userId: string; email: string
 export default function PatientPage() {
   return (
     <AuthGuard>
-      {({ userId, email }) => (
+      {({ userId, email, isAdmin }) => (
         <Suspense
           fallback={
             <div className="flex min-h-screen items-center justify-center bg-[#F4F7F8] text-sm text-slate-600">
@@ -1331,7 +1343,7 @@ export default function PatientPage() {
             </div>
           }
         >
-          <PatientDetailContent userId={userId} email={email} />
+          <PatientDetailContent userId={userId} email={email} sessionIsAdmin={isAdmin} />
         </Suspense>
       )}
     </AuthGuard>

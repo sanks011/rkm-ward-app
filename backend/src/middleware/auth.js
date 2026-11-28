@@ -1,8 +1,8 @@
+const jwt = require("jsonwebtoken");
 const config = require("../config/env");
 
 /**
- * Verifies the doctor's Supabase JWT Bearer token before allowing access
- * to protected AI, transcription, and patient database endpoints.
+ * Verifies MongoDB-issued JWT Bearer tokens (primary), with Supabase JWT fallback.
  */
 async function requireAuth(req, res, next) {
   try {
@@ -13,24 +13,45 @@ async function requireAuth(req, res, next) {
       return res.status(401).json({ error: "Authentication required. Please log in." });
     }
 
-    const response = await fetch(`${config.supabaseUrl}/auth/v1/user`, {
-      headers: {
-        apikey: config.supabaseKey,
-        Authorization: `Bearer ${token}`
-      }
-    });
-
-    if (!response.ok) {
-      return res.status(401).json({ error: "Session expired. Please log in again." });
+    // 1. Primary: Verify our Express/MongoDB JWT
+    try {
+      const decoded = jwt.verify(token, config.jwtSecret);
+      req.user = {
+        id: decoded.sub,
+        email: decoded.email,
+        fullName: decoded.fullName || "",
+        role: decoded.role || "doctor",
+        is_admin: !!decoded.is_admin,
+        token
+      };
+      return next();
+    } catch {
+      // Not our JWT; try Supabase fallback if configured
     }
 
-    const user = await response.json();
-    req.user = {
-      id: user.id,
-      email: user.email,
-      token
-    };
-    return next();
+    if (config.supabaseUrl && config.supabaseKey) {
+      const response = await fetch(`${config.supabaseUrl}/auth/v1/user`, {
+        headers: {
+          apikey: config.supabaseKey,
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        const user = await response.json();
+        req.user = {
+          id: user.id,
+          email: user.email,
+          fullName: user.email,
+          role: "doctor",
+          is_admin: false,
+          token
+        };
+        return next();
+      }
+    }
+
+    return res.status(401).json({ error: "Session expired or invalid. Please log in again." });
   } catch (err) {
     return res.status(502).json({ error: "Could not verify authentication: " + err.message });
   }

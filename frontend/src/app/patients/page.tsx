@@ -93,9 +93,11 @@ export default function PatientsPage() {
   const [deletedList, setDeletedList] = useState<DeletedRecord[]>([]);
   const [deletedLoading, setDeletedLoading] = useState(false);
 
-  async function loadData(userId?: string) {
+  async function loadData(userId?: string, sessionAdmin?: boolean) {
     setLoading(true);
-    if (userId) {
+    if (sessionAdmin) {
+      setIsAdmin(true);
+    } else if (userId && /^[0-9a-f]{8}-[0-9a-f]{4}-/i.test(userId)) {
       const { data: roleRow } = await supabase
         .from("staff_roles")
         .select("is_admin")
@@ -348,11 +350,11 @@ export default function PatientsPage() {
 
   return (
     <AuthGuard>
-      {({ userId, email }) => (
+      {({ userId, email, isAdmin: sessionAdmin }) => (
         <PatientsInner
           userId={userId}
           email={email}
-          onReady={() => loadData(userId)}
+          onReady={() => loadData(userId, sessionAdmin)}
           patients={filteredPatients}
           allPhotos={photos}
           loading={loading}

@@ -59,8 +59,12 @@ export default function SignaturePad({ userId, userEmail, value, onChange }: Sig
       // ignore
     }
 
-    // Also check approved hospital doctor_profiles if available
+    // Also check approved hospital doctor_profiles if logged in via Supabase UUID
     async function loadProfile() {
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-/i.test(userId)) {
+        setProfileMsg("Draw your signature below and save it to reuse across charts.");
+        return;
+      }
       try {
         const { data } = await supabase
           .from("doctor_profiles")

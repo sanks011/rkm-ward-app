@@ -54,6 +54,7 @@ app.use((req, _res, next) => {
 });
 
 // Routes
+app.use("/api/auth", require("./src/routes/auth"));
 app.use("/api/health", require("./src/routes/health"));
 app.use("/api/transcribe", require("./src/routes/transcribe"));
 app.use("/api/sort", require("./src/routes/sort"));

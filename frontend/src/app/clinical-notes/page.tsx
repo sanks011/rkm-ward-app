@@ -405,7 +405,8 @@ function ClinicalNotesContent({ userId, email }: { userId: string; email: string
     if (sorted.current_weight) setCurrentWeight(sorted.current_weight);
 
     const total = ((Date.now() - t0) / 1000).toFixed(1);
-    const timing = ms ? ` = speech ${ms.stt}s + sort ${ms.sort}s` : "";
+    const parts = [ms?.stt ? `speech ${ms.stt}s` : "", ms?.sort ? `sort ${ms.sort}s` : ""].filter(Boolean);
+    const timing = parts.length ? ` = ${parts.join(" + ")}` : "";
     setAiStatus({
       type: "ok",
       text: `${count} section(s) populated. Review and edit fields below before signing. [Total ${total}s${timing}]`

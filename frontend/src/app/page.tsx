@@ -10,7 +10,7 @@ import {
   Microscope,
   ShieldCheck
 } from "lucide-react";
-import { supabase } from "@/lib/supabase";
+import { getStoredAuth, loginWithMongo } from "@/lib/auth";
 import AppHeader from "@/components/AppHeader";
 
 export default function HomePage() {
@@ -26,16 +26,9 @@ export default function HomePage() {
       navigator.serviceWorker.register("/sw.js").catch(() => {});
     }
 
-    supabase.auth.getSession().then(({ data }) => {
-      setUserEmail(data.session?.user.email || null);
-      setLoadingSession(false);
-    });
-
-    const { data: listener } = supabase.auth.onAuthStateChange((_evt, session) => {
-      setUserEmail(session?.user.email || null);
-    });
-
-    return () => listener.subscription.unsubscribe();
+    const stored = getStoredAuth();
+    setUserEmail(stored?.user.email || null);
+    setLoadingSession(false);
   }, []);
 
   async function handleLogin(e: React.FormEvent) {
@@ -47,14 +40,13 @@ export default function HomePage() {
     }
 
     setAuthLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
-      password
-    });
-    setAuthLoading(false);
-
-    if (error) {
-      setAuthError(error.message);
+    try {
+      const user = await loginWithMongo(email.trim(), password);
+      setUserEmail(user.email);
+    } catch (err) {
+      setAuthError(err instanceof Error ? err.message : "Login failed.");
+    } finally {
+      setAuthLoading(false);
     }
   }
 
@@ -82,7 +74,7 @@ export default function HomePage() {
               </div>
               <h2 className="text-xl font-bold text-slate-900">Clinical Staff Login</h2>
               <p className="mt-1 text-xs text-slate-500">
-                Sign in with your hospital staff account to access ward rounds and patient charts
+                Sign in with your MongoDB hospital account to access ward rounds and patient charts
               </p>
             </div>
 
@@ -96,7 +88,7 @@ export default function HomePage() {
                   type="email"
                   autoComplete="username"
                   className="clinical-input"
-                  placeholder="doctor@rkmsp.org"
+                  placeholder="admin@rkmsp.org"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                 />
@@ -146,7 +138,6 @@ export default function HomePage() {
             </div>
 
             <div className="grid gap-6 md:grid-cols-3">
-              {/* Ward Module */}
               <Link
                 href="/ward"
                 className="group clinical-card flex flex-col justify-between p-6 border-t-4 border-t-teal-700 hover:border-teal-600 hover:shadow-md transition"
@@ -170,7 +161,6 @@ export default function HomePage() {
                 </div>
               </Link>
 
-              {/* Patient Data Module */}
               <Link
                 href="/patients"
                 className="group clinical-card flex flex-col justify-between p-6 border-t-4 border-t-sky-700 hover:border-sky-600 hover:shadow-md transition"
@@ -194,7 +184,6 @@ export default function HomePage() {
                 </div>
               </Link>
 
-              {/* Diagnostic Module */}
               <Link
                 href="/diagnostic"
                 className="group clinical-card flex flex-col justify-between p-6 border-t-4 border-t-slate-400 hover:border-slate-500 hover:shadow-md transition"

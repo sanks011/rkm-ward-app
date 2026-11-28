@@ -1,8 +1,11 @@
 import { supabase } from "./supabase";
+import { getStoredAuth } from "./auth";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "";
 
 async function getToken(): Promise<string> {
+  const stored = getStoredAuth();
+  if (stored?.token) return stored.token;
   const { data } = await supabase.auth.getSession();
   return data.session?.access_token || "";
 }

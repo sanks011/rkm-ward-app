@@ -4,14 +4,22 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { getStoredAuth, logoutAuth } from "@/lib/auth";
+
+export interface GuardSession {
+  userId: string;
+  email: string;
+  isAdmin: boolean;
+  fullName: string;
+}
 
 interface AuthGuardProps {
-  children: (session: { userId: string; email: string }) => React.ReactNode;
+  children: (session: GuardSession) => React.ReactNode;
 }
 
 export default function AuthGuard({ children }: AuthGuardProps) {
   const router = useRouter();
-  const [sessionInfo, setSessionInfo] = useState<{ userId: string; email: string } | null>(null);
+  const [sessionInfo, setSessionInfo] = useState<GuardSession | null>(null);
   const [checking, setChecking] = useState(true);
 
   useEffect(() => {
@@ -23,24 +31,44 @@ export default function AuthGuard({ children }: AuthGuardProps) {
     const resetTimer = () => {
       clearTimeout(timer);
       timer = setTimeout(async () => {
-        await supabase.auth.signOut();
+        await logoutAuth();
         alert("You were logged out due to 30 minutes of inactivity.");
         router.push("/");
       }, 30 * 60 * 1000);
     };
 
-    supabase.auth.getSession().then(({ data }) => {
-      if (!data.session) {
-        router.replace("/");
+    async function verifySession() {
+      const mongoAuth = getStoredAuth();
+      if (mongoAuth) {
+        setSessionInfo({
+          userId: mongoAuth.user.id,
+          email: mongoAuth.user.email,
+          isAdmin: !!mongoAuth.user.is_admin,
+          fullName: mongoAuth.user.fullName || mongoAuth.user.email
+        });
+        setChecking(false);
+        resetTimer();
         return;
       }
-      setSessionInfo({
-        userId: data.session.user.id,
-        email: data.session.user.email || ""
-      });
-      setChecking(false);
-      resetTimer();
-    });
+
+      // Fallback check for any active Supabase session
+      const { data } = await supabase.auth.getSession();
+      if (data.session) {
+        setSessionInfo({
+          userId: data.session.user.id,
+          email: data.session.user.email || "",
+          isAdmin: false,
+          fullName: data.session.user.email || ""
+        });
+        setChecking(false);
+        resetTimer();
+        return;
+      }
+
+      router.replace("/");
+    }
+
+    verifySession();
 
     const events = ["mousemove", "keydown", "touchstart", "click", "scroll"];
     events.forEach((evt) => document.addEventListener(evt, resetTimer));

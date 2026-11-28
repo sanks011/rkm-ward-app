@@ -2,9 +2,8 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { ArrowLeft, Download, LogOut, UserCheck } from "lucide-react";
-import { supabase } from "@/lib/supabase";
+import { logoutAuth } from "@/lib/auth";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -28,7 +27,6 @@ export default function AppHeader({
   userEmail,
   rightSlot
 }: AppHeaderProps) {
-  const router = useRouter();
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
 
   useEffect(() => {
@@ -48,9 +46,8 @@ export default function AppHeader({
   }
 
   async function handleLogout() {
-    await supabase.auth.signOut();
-    router.push("/");
-    router.refresh();
+    await logoutAuth();
+    window.location.href = "/";
   }
 
   return (

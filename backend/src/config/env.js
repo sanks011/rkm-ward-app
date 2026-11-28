@@ -11,5 +11,6 @@ module.exports = {
   supabaseUrl: process.env.SUPABASE_URL || "",
   supabaseKey: process.env.SUPABASE_KEY || "",
   mongoUri: process.env.MONGO_URI || "",
-  mongoDbName: process.env.MONGO_DB_NAME || "rkmsp_ward"
+  mongoDbName: process.env.MONGO_DB_NAME || "rkmsp_ward",
+  jwtSecret: process.env.JWT_SECRET || "rkmsp_dev_jwt_secret_change_me"
 };
